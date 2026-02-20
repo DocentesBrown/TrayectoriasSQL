@@ -1206,6 +1206,28 @@ function wireTabs() {
   });
 }
 
+
+function updateEgresadosUi_() {
+  const active = (state.viewMode === 'egresados');
+  const btn = $('btnEgresados');
+  if (btn) btn.textContent = active ? 'Ver activos' : 'Egresados';
+  const btnMore = $('btnMoreEgresados');
+  if (btnMore) btnMore.textContent = active ? 'Ver activos' : 'Egresados';
+  // Hint en header
+  const badge = $('viewModeBadge');
+  if (badge) badge.textContent = active ? 'Mostrando: EGRESADOS' : '';
+}
+
+async function toggleEgresadosView_() {
+  state.viewMode = (state.viewMode === 'egresados') ? 'activos' : 'egresados';
+  state.selectedStudentId = null;
+  state.studentStatus = null;
+  updateEgresadosUi_();
+  renderStudents();
+  renderStudentPanel();
+  await loadStudents();
+}
+
 function wireEvents() {
   // Micro-animación al tocar cualquier botón (mobile friendly)
   document.addEventListener('click', (e) => {
@@ -1316,6 +1338,17 @@ $('btnRefresh').onclick = async () => {
   } finally {
     setBtnLoading($('btnRefresh'), false);
   }
+};
+
+// Toggle egresados / activos
+if ($('btnEgresados')) $('btnEgresados').onclick = async () => {
+  if (!state.apiKey && !localStorage.getItem(LS_KEY)) return;
+  await toggleEgresadosView_();
+};
+if ($('btnMoreEgresados')) $('btnMoreEgresados').onclick = async () => {
+  closeModal('modalMore');
+  if (!state.apiKey && !localStorage.getItem(LS_KEY)) return;
+  await toggleEgresadosView_();
 };
 
 $('btnRollover').onclick = async () => {
@@ -1596,6 +1629,7 @@ async function init() {
 
       showAppLoader_('Cargando estudiantes…');
       await loadStudents();
+      updateEgresadosUi_();
 
       hideBootLoader_();
     } catch {

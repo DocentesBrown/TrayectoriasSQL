@@ -386,7 +386,7 @@ function getStudentList_(payload) {
   const tmp = getValues_(SHEETS.ESTUDIANTES);
   const idx = headerMap_(tmp.headers);
 
-  const students = tmp.rows
+  let students = tmp.rows
     .filter(r => r.some(c => String(c).trim() !== ''))
     .map(r => ({
       id_estudiante: String(r[idx['id_estudiante']] || '').trim(),
@@ -397,13 +397,26 @@ function getStudentList_(payload) {
       turno: String(r[idx['turno']] || '').trim(),
       activo: (idx['activo'] !== undefined) ? toBool_(r[idx['activo']]) : true,
       observaciones: (idx['observaciones'] !== undefined) ? String(r[idx['observaciones']] || '').trim() : '',
-      orientacion: (idx['orientacion'] !== undefined) ? String(r[idx['orientacion']] || '').trim() : ''
+      orientacion: (idx['orientacion'] !== undefined) ? String(r[idx['orientacion']] || '').trim() : '',
+      egresado: (idx['egresado'] !== undefined) ? toBool_(r[idx['egresado']]) : false,
+      anio_egreso: (idx['anio_egreso'] !== undefined) ? String(r[idx['anio_egreso']] || '').trim() : ''
     }))
     .filter(s => s.id_estudiante)
-    .filter(s => s.activo !== false)
-    .filter(s => (idx['egresado'] !== undefined) ? (toBool_(String(tmp.rows.find(rr => String(rr[idx['id_estudiante']]||'').trim()===s.id_estudiante)[idx['egresado']])) === false) : true);
+    .filter(s => s.activo !== false);
 
-  if (!ciclo) return students;
+  // Filtro egresados:
+  // - Por defecto NO mostramos egresados en la lista principal (como antes).
+  // - Si payload.only_egresados = true -> solo egresados.
+  // - Si payload.include_egresados = true -> incluye egresados junto con activos.
+  const onlyEgresados = (payload && payload.only_egresados !== undefined) ? toBool_(payload.only_egresados) : false;
+  const includeEgresados = (payload && payload.include_egresados !== undefined) ? toBool_(payload.include_egresados) : false;
+
+  if (onlyEgresados) {
+    students = students.filter(s => !!s.egresado);
+  } else if (!includeEgresados) {
+    students = students.filter(s => !s.egresado);
+  }
+if (!ciclo) return students;
 
   // Catalog para filtrar por orientación
   const byStudent = {};
